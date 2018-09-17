@@ -1,15 +1,11 @@
 import { byte } from "./byte";
 import { ByteBuffer } from "./ByteBuffer";
-import { Endian } from "./Endian";
 import { OperationsList } from "./OperationsList";
 import { OperationType } from "./OperationType";
-import { Operation } from "./Operation";
 import { IsOperation } from "./IsOperation";
-import { AnyOperation } from "./AnyOperation";
 import { GetOperation } from "./GetOperation";
 import { IfOperation } from "./IfOperation";
 import { StartBufferingOperation } from "./StartBufferingOperation";
-import { BufferingOperation } from "./BufferingOperation";
 
 export class FluentParser
 {
@@ -25,14 +21,30 @@ export class FluentParser
     private out = {};
     private bufferVarName = '';
     private buffer: ByteBuffer = new ByteBuffer();
+    private frame: byte[] = [];
+
+    private Xor(frame: byte[]): byte
+    {
+        return frame.reduce((xor, next) =>
+        { 
+            return xor ^ next;
+        });
+    }
 
     public Parse(b: byte): this 
     {
+        this.frame.push(b);
         let op = this._operations.Current;
         // console.log(`Parse(${ b }) | ${ this._operations.toString() }`);
 
         switch (op.type) // if switch by object type is possible then .type could be removed
         {
+            case OperationType.IsXor:
+                if (b === this.Xor(this.frame.slice(0, this.frame.length-1))) this.Next();
+                else
+                 this.Reset();
+                break;
+
             case OperationType.Is:
                 if (b === (op as IsOperation).toCompare) this.Next();
                 else this.Reset();
@@ -105,9 +117,10 @@ export class FluentParser
     }
 
     private Next()
-    { //this.currentIndex++;
+    {
         this._operations.Next();
     }
+
     // TODO: move to OperationsList
     private Reset(ending = false)
     {
@@ -120,6 +133,7 @@ export class FluentParser
         }
         this._operations.Reset();
         this.out = {};
+        this.frame = [];
         this._operations = this.operationsCopy; // TODO: Reload at OperationList
     }
 
@@ -132,83 +146,3 @@ export class FluentParser
         this.onFaultCallback = callback;
     }
 }
-
-export class FluentParserBuilder
-{
-    private operationsList: OperationsList = new OperationsList();
-    private Add(op: Operation) { this.operationsList.Add(op); }
-    public get List(): Operation[] { return this.operationsList.list; }
-
-    public Build()
-    {
-        //    console.log(this.operationsList);
-        return new FluentParser(this.operationsList);
-    }
-
-    public Is(b)
-    {
-        this.operationsList.Add(new IsOperation(b));
-
-        return this;
-    }
-
-    public Any()
-    {
-        this.operationsList.Add(new AnyOperation());
-
-        return this;
-    }
-
-    public Get(varName: string)
-    {
-        this.operationsList.Add(new GetOperation(varName));
-
-        return this;
-    }
-
-    public Get2LE(varName: string)
-    {
-        this.operationsList.Add(new StartBufferingOperation(varName, 2, Endian.Little));
-        this.operationsList.Add(new BufferingOperation());
-
-        return this;
-    }
-    
-    public Get2BE(varName: string)
-    {
-        this.operationsList.Add(new StartBufferingOperation(varName, 2, Endian.Big));
-        this.operationsList.Add(new BufferingOperation());
-
-        return this;
-    }
-
-    public Get4LE(varName: string)
-    {
-        this.operationsList.Add(new StartBufferingOperation(varName, 4, Endian.Little));
-        this.operationsList.Add(new BufferingOperation());
-        this.operationsList.Add(new BufferingOperation());
-        this.operationsList.Add(new BufferingOperation());
-
-        return this;
-    }
-
-    public Get4BE(varName: string)
-    {
-        this.operationsList.Add(new StartBufferingOperation(varName, 4, Endian.Big));
-        this.operationsList.Add(new BufferingOperation());
-        this.operationsList.Add(new BufferingOperation());
-        this.operationsList.Add(new BufferingOperation());
-
-        return this;
-    }
-
-    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder) => FluentParserBuilder)
-    {
-        const builder = builderCallback(new FluentParserBuilder());
-
-        this.operationsList.Add(new IfOperation(toCompare, builder.List));
-
-        return this;
-    }
-}
-

@@ -4,7 +4,7 @@ export enum OperationType
     Any = "Any",
     Get = "Get",
     If = "If",
-    Get2BE = "Get2BE",
+    IsXor = "IsXor",
     StartBuffering = "StartBuffering",
     Buffering = "Buffering"
 }
