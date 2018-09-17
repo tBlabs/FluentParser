@@ -103,10 +103,38 @@ const testCases: TestCase[] =
         expectFaultDef: ()=>{}
     },
     {
+        label: 'ending with ifs',
+        inputStream: [0x01, 0xFF],
+        parserDef: _=>_.Is(0x01)
+                .If(0x11, _ => _.Is(0x12))
+                .If(0x12, _ => _.Is(0x12))
+                .If(0x13, _ => _.Is(0x12)),
+        expectSuccessDef: null,
+        expectFaultDef: ()=>{}
+    },
+    {
         label: 'Get2LE',
         inputStream: [0x01, 0x02],
         parserDef: _=>_.Get2LE('val'),
         expectSuccessDef: ({val}) => expect(val).toBe(0x0102)              
+    },
+    {
+        label: 'Get2BE',
+        inputStream: [0x01, 0x02],
+        parserDef: _=>_.Get2BE('val'),
+        expectSuccessDef: ({val}) => expect(val).toBe(0x0201)              
+    },
+    {
+        label: 'Get4LE',
+        inputStream: [0x01, 0x02, 0x03, 0x04],
+        parserDef: _=>_.Get4LE('val'),
+        expectSuccessDef: ({val}) => expect(val).toBe(0x01020304)              
+    },
+    {
+        label: 'Get4BE',
+        inputStream: [0x01, 0x02, 0x03, 0x04],
+        parserDef: _=>_.Get4BE('val'),
+        expectSuccessDef: ({val}) => expect(val).toBe(0x04030201)              
     }
 ];
 

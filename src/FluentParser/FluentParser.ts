@@ -1,50 +1,58 @@
 import { byte } from "./byte";
 import { ByteBuffer } from "./ByteBuffer";
 import { Endian } from "./Endian";
+import { OperationsList } from "./OperationsList";
+import { OperationType } from "./OperationType";
+import { Operation } from "./Operation";
+import { IsOperation } from "./IsOperation";
+import { AnyOperation } from "./AnyOperation";
+import { GetOperation } from "./GetOperation";
+import { IfOperation } from "./IfOperation";
+import { StartBufferingOperation } from "./StartBufferingOperation";
+import { BufferingOperation } from "./BufferingOperation";
 
 export class FluentParser
 {
     private operationsCopy: OperationsList;
-    constructor(private _operationsList: OperationsList)
-    { 
-        this.operationsCopy = this._operationsList ;
+    constructor(private _operations: OperationsList)
+    {
+        this.operationsCopy = this._operations;
         // console.log(this._operationsList);
     }
 
-    private currentIndex = 0;
     private onCompleteCallback;
     private onFaultCallback;
     private out = {};
-    // private buffer = [];
     private bufferVarName = '';
     private buffer: ByteBuffer = new ByteBuffer();
 
-    public Parse(b: byte): void 
+    public Parse(b: byte): this 
     {
-        let op = this._operationsList.Get(this.currentIndex);
-      console.log('val',b,', cur:', this.currentIndex,', type', op.type);
-        
+        let op = this._operations.Current;
+        // console.log(`Parse(${ b }) | ${ this._operations.toString() }`);
+
         switch (op.type) // if switch by object type is possible then .type could be removed
         {
-            case OperationType.Is: 
-                if (b === (op as IsOperation).toComapre) this.Next();
+            case OperationType.Is:
+                if (b === (op as IsOperation).toCompare) this.Next();
                 else this.Reset();
                 break;
 
-            case OperationType.Get: 
+            case OperationType.Get:
                 const varName = (op as GetOperation).varName;
                 this.out[varName] = b;
                 this.Next();
                 break;
-            
-            case OperationType.Any: 
+
+            case OperationType.Any:
                 this.Next();
                 break;
 
             case OperationType.StartBuffering:
                 this.bufferVarName = (op as StartBufferingOperation).varName;
                 const varSize = (op as StartBufferingOperation).varSize;
-                this.buffer = new ByteBuffer(varSize);
+                const endian = (op as StartBufferingOperation).endian;
+                this.buffer = new ByteBuffer(varSize, endian);
                 this.buffer.Add(b);
                 this.Next();
                 break;
@@ -53,63 +61,41 @@ export class FluentParser
                 this.buffer.Add(b);
                 if (this.buffer.IsFull)
                 {
-                    // console.log('END');
                     this.out[this.bufferVarName] = this.buffer.ToValue();
                 }
                 this.Next();
                 break;
-            
-            case OperationType.If: 
-            /*
-                Szukaj pasującego ifa
-                Jeśli znajdziesz usuń wszystkie następne ify
-                Insertnij operacje ifa
-                Koniecznie przeładuj listę operacji po resecie
-            */
-            // console.log('first If',this._operationsList.list);
-                let anyIfFulfiled = false;
-                while (this._operationsList.GetType(this.currentIndex) === OperationType.If)
+
+            case OperationType.If:
+                let anyIfFulfilled = false;
+                while (this._operations.Is(OperationType.If))
                 {
-                //    console.log('i=',this.currentIndex,'/', this._operationsList.Size);
-                    if (b === (this._operationsList.list[this.currentIndex] as IfOperation).toCompare)
+                    if (b === (this._operations.Current as IfOperation).toCompare)
                     {
-                        anyIfFulfiled = true;
-                        const list = (this._operationsList.list[this.currentIndex] as IfOperation).list;
-                        // console.log('before rem',this._operationsList.list);
-                        let n = this.currentIndex;
-                        let toRemove = 0;
-                       
-                        // TODO: OperationsList.RemoveAllNextIfs
-                        while (this._operationsList.GetType(n) === OperationType.If)
-                        {
-                            n++;
-                            if (n >= this._operationsList.list.length) break;
-                            toRemove++;
-                            // console.log('to remove', toRemove);
-                        }
-                        this._operationsList.Remove(this.currentIndex, toRemove);
-                   
-                        // console.log('after rem', this._operationsList.list);
-
-                        this._operationsList.Insert(this.currentIndex, list);
-
-                        // console.log('after insert', this._operationsList);
-                        // console.log('cur', this.currentIndex);
+                        anyIfFulfilled = true;
+                        const list = (this._operations.Current as IfOperation).list;
+                        const toRemove = this._operations.CountType(OperationType.If);
+                        this._operations.Remove(toRemove);
+                        this._operations.Insert(list);
                         this.Next();
-
                         break;
                     }
-                    // console.log('next');
+
                     this.Next();
+                    if (this._operations.IsLast)
+                    {
+                        this.onFaultCallback(this.out);
+                        this.Reset(true);
+                        break;
+                    }
                 }
-                if (anyIfFulfiled==false)
+                if (anyIfFulfilled == false)
                 {
                     this.Reset();
                 }
                 break;
         }
-// TODO: repeat this in If operation
-        if (this.currentIndex === this._operationsList.Size)
+        if (this._operations.IsLast)
         {
             this.onCompleteCallback(this.out);
             this.Reset(true);
@@ -118,17 +104,23 @@ export class FluentParser
         return this;
     }
 
-    private Next() { this.currentIndex++; } // TODO: move to OperationsList
+    private Next()
+    { //this.currentIndex++;
+        this._operations.Next();
+    }
+    // TODO: move to OperationsList
     private Reset(ending = false)
-    { 
-       if (ending === false)
-            if (this.currentIndex > 0)
+    {
+        if (ending === false)
+        {
+            if (this._operations.IsNonZeroIndex())
             {
-                console.log('fault at', this.currentIndex);
                 this.onFaultCallback();
             }
-        this.currentIndex = 0; this.out = {}; 
-        this._operationsList= this.operationsCopy; // TODO: Reload at OperationList
+        }
+        this._operations.Reset();
+        this.out = {};
+        this._operations = this.operationsCopy; // TODO: Reload at OperationList
     }
 
     public OnComplete(callback)
@@ -146,10 +138,10 @@ export class FluentParserBuilder
     private operationsList: OperationsList = new OperationsList();
     private Add(op: Operation) { this.operationsList.Add(op); }
     public get List(): Operation[] { return this.operationsList.list; }
-    
+
     public Build()
     {
-    //    console.log(this.operationsList);
+        //    console.log(this.operationsList);
         return new FluentParser(this.operationsList);
     }
 
@@ -181,132 +173,42 @@ export class FluentParserBuilder
 
         return this;
     }
+    
+    public Get2BE(varName: string)
+    {
+        this.operationsList.Add(new StartBufferingOperation(varName, 2, Endian.Big));
+        this.operationsList.Add(new BufferingOperation());
 
-    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder)=>FluentParserBuilder)
+        return this;
+    }
+
+    public Get4LE(varName: string)
+    {
+        this.operationsList.Add(new StartBufferingOperation(varName, 4, Endian.Little));
+        this.operationsList.Add(new BufferingOperation());
+        this.operationsList.Add(new BufferingOperation());
+        this.operationsList.Add(new BufferingOperation());
+
+        return this;
+    }
+
+    public Get4BE(varName: string)
+    {
+        this.operationsList.Add(new StartBufferingOperation(varName, 4, Endian.Big));
+        this.operationsList.Add(new BufferingOperation());
+        this.operationsList.Add(new BufferingOperation());
+        this.operationsList.Add(new BufferingOperation());
+
+        return this;
+    }
+
+    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder) => FluentParserBuilder)
     {
         const builder = builderCallback(new FluentParserBuilder());
-   
+
         this.operationsList.Add(new IfOperation(toCompare, builder.List));
 
         return this;
     }
 }
 
-class OperationsList
-{
-    public list: Operation[] = [];
-
-    toString()
-    {
-        return this.list.map(i=>i.toString());
-    }
-    public Add(operation: Operation)
-    {
-        this.list.push(operation);
-    }
-
-    public Get(index)
-    {
-        if (index >= this.list.length)
-        {
-            throw new Error('Argument out of range');
-        }
-
-        return this.list[index];
-    } 
-    public GetType(index)
-    {
-        // console.log('GetType', index);
-        return this.Get(index).type;
-    } 
-
-    public Insert(index, operations: Operation[])
-    {
-        // console.log('insert at', index+1);
-        // console.log('insert start', operations);
-        operations.reverse().forEach(op=>{
-            // console.log('inserting', op.type);
-        this.list.splice(index+1, 0, op);
-        });
-        // console.log('insert end', operations);
-    }
-
-    public Remove(atIndex: number, count: number = 1)
-    {
-        //  console.log('removing ', atIndex, ', count:',count);
-
-        this.list.splice(atIndex, count);
-    }
-
-    public get Size()
-    {
-        return this.list.length;
-    }
-}
-
-enum OperationType
-{
-    Is = "Is", 
-    Any = "Any", 
-    Get = "Get", 
-    If = "If",
-    Get2BE = "Get2BE",
-    StartBuffering = "StartBuffering",
-    Buffering = "Buffering"
-}
-
-class Operation
-{
-    public type;
-
-    toString()
-    {
-        return this.type;
-    }
-}
-
-
-class IsOperation implements Operation
-{
-    public type = OperationType.Is;
-
-    constructor(public toComapre: byte)
-    { }
-}
-
-class AnyOperation implements Operation
-{
-    public type = OperationType.Any;
-}
-
-class GetOperation implements Operation
-{
-    public type = OperationType.Get;
-
-    constructor(public varName: string)
-    { }
-}
-
-class IfOperation implements Operation
-{
-    public type = OperationType.If;
-
-    constructor(public toCompare: byte, public list: Operation[])
-    { }
-}
-
-class StartBufferingOperation implements Operation
-{
-    public type = OperationType.StartBuffering;
-
-    constructor(public varName: string, public varSize: number, public endian: Endian)
-    { }
-}
-
-class BufferingOperation implements Operation
-{
-    public type = OperationType.Buffering;
-
-    constructor()
-    { }
-}
