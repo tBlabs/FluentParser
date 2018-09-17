@@ -1,49 +1,6 @@
-type byte = number;
-
-enum Endian 
-{
-    Little,
-    Big
-}
-
-class ByteBuffer
-{
-    public valueSize = 0;
-    public endian = Endian.Little; 
-    private counter = 0;
-    private buffer: byte[] = [];
-
-    constructor(public size = 0)
-    {
-        this.valueSize = size;
-        this.counter = size;
-    }
-
-    public ToValue()
-    {
-        switch (this.valueSize)
-        {
-            case 2:
-                switch (this.endian)
-                {
-                    case Endian.Little:
-                        return this.buffer[0] << 8 | this.buffer[1];
-                }
-        }
-    }
-
-    public Add(b: byte)
-    {
-        this.buffer.push(b);
-
-        this.counter--;
-    }
-
-    public get IsFull()
-    {
-        return this.counter == 0;
-    }
-}
+import { byte } from "./byte";
+import { ByteBuffer } from "./ByteBuffer";
+import { Endian } from "./Endian";
 
 export class FluentParser
 {
@@ -62,10 +19,10 @@ export class FluentParser
     private bufferVarName = '';
     private buffer: ByteBuffer = new ByteBuffer();
 
-    public Parse(b) 
+    public Parse(b: byte): void 
     {
         let op = this._operationsList.Get(this.currentIndex);
-    //   console.log('val',b,', cur:', this.currentIndex,', type', op.type);
+      console.log('val',b,', cur:', this.currentIndex,', type', op.type);
         
         switch (op.type) // if switch by object type is possible then .type could be removed
         {
@@ -109,18 +66,20 @@ export class FluentParser
                 Insertnij operacje ifa
                 Koniecznie przeładuj listę operacji po resecie
             */
-        //    console.log('first If',this._operationsList.list);
-             //   let i=this.currentIndex;
+            // console.log('first If',this._operationsList.list);
+                let anyIfFulfiled = false;
                 while (this._operationsList.GetType(this.currentIndex) === OperationType.If)
                 {
                 //    console.log('i=',this.currentIndex,'/', this._operationsList.Size);
                     if (b === (this._operationsList.list[this.currentIndex] as IfOperation).toCompare)
                     {
+                        anyIfFulfiled = true;
                         const list = (this._operationsList.list[this.currentIndex] as IfOperation).list;
-                        //  console.log('before rem',this._operationsList.list);
+                        // console.log('before rem',this._operationsList.list);
                         let n = this.currentIndex;
                         let toRemove = 0;
-                        try {
+                       
+                        // TODO: OperationsList.RemoveAllNextIfs
                         while (this._operationsList.GetType(n) === OperationType.If)
                         {
                             n++;
@@ -128,20 +87,24 @@ export class FluentParser
                             toRemove++;
                             // console.log('to remove', toRemove);
                         }
-                            this._operationsList.Remove(this.currentIndex, toRemove);
-                    } catch (ex) { console.log(ex);}
-                            //  console.log('after rem', this._operationsList.list);
+                        this._operationsList.Remove(this.currentIndex, toRemove);
+                   
+                        // console.log('after rem', this._operationsList.list);
 
                         this._operationsList.Insert(this.currentIndex, list);
 
-                        //  console.log('after insert', this._operationsList);
+                        // console.log('after insert', this._operationsList);
                         // console.log('cur', this.currentIndex);
                         this.Next();
+
                         break;
                     }
+                    // console.log('next');
                     this.Next();
-
-                //    i++;
+                }
+                if (anyIfFulfiled==false)
+                {
+                    this.Reset();
                 }
                 break;
         }
@@ -155,16 +118,18 @@ export class FluentParser
         return this;
     }
 
-    private Next() { this.currentIndex++; }
-    private Reset(ending = false) { 
+    private Next() { this.currentIndex++; } // TODO: move to OperationsList
+    private Reset(ending = false)
+    { 
        if (ending === false)
-        if (this.currentIndex > 0)
-        {
-            // console.log('fault at', this.currentIndex);
-            this.onFaultCallback();
-        }
+            if (this.currentIndex > 0)
+            {
+                console.log('fault at', this.currentIndex);
+                this.onFaultCallback();
+            }
         this.currentIndex = 0; this.out = {}; 
-    this._operationsList= this.operationsCopy; }
+        this._operationsList= this.operationsCopy; // TODO: Reload at OperationList
+    }
 
     public OnComplete(callback)
     {
