@@ -33,8 +33,8 @@ export class FluentParser
     public Parse(b: byte): this 
     {
         this.frame.push(b);
-        let op = this._operations.Current;
-        // console.log(`Parse(${ b }) | ${ this._operations.toString() }`);
+
+        const op = this._operations.Current;
 
         switch (op.type) // if switch by object type is possible then .type could be removed
         {
@@ -136,7 +136,7 @@ export class FluentParser
         this._operations.Reset();
         this.out = {};
         this.frame = [];
-        this._operations = this.operationsCopy; // TODO: Reload at OperationList
+        this._operations = this.operationsCopy;
     }
 
     public OnComplete(callback)

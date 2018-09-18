@@ -13,7 +13,6 @@ export class OperationsList
 
     toString()
     {
-        // return this.list.map(i => i.toString());
         return this.currentIndex+'/'+this.Size;
     }
 
@@ -24,10 +23,7 @@ export class OperationsList
 
     public Next()
     {
-        // if (this.currentIndex < (this.Size))
-        {
-            this.currentIndex++;
-        }
+        this.currentIndex++;
     }
 
     public Reset()
