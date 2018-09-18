@@ -5,15 +5,24 @@ Bytes stream parser with fluent API.
 ## Example of usage
 
 ```
+    // Define parser output structure
+    interface FrameData
+    {
+        cmd: number;
+        value: number;
+    }
+
     // Build parser
+    const parserBuilder = new FluentParserBuilder<FrameData>();
+
     const parser = parserBuilder
-        .Is(0x01).Get('cmd').IsXor()
+        .Is(0x01).Get('cmd').Get2LE('value').IsXor()
         .Build();
 
     // Hook up on parse complete 
-    parser.OnComplete(({cmd}) =>
+    parser.OnComplete(({cmd, value}) =>
     {
-        console.log(cmd);
+        console.log(cmd, value);
     });
 
     // Pump data into parser
@@ -24,8 +33,8 @@ Bytes stream parser with fluent API.
 ```
 
 # Important classes
-- FluentParserBuilder - definition of parser with fluent API
-- FluentParser - result of Build() at FluentParserBuilder
+- FluentParserBuilder<T> - definition of parser with fluent API
+- FluentParser<T> - result of Build() at FluentParserBuilder
 
 # Options
 - Is(8-bit value) - check value

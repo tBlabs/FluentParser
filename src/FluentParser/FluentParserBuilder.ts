@@ -11,7 +11,7 @@ import { BufferingOperation } from "./Operations/BufferingOperation";
 import { IsXorOperation } from "./Operations/IsXorOperation";
 import { FluentParser } from "./FluentParser";
 
-export class FluentParserBuilder
+export class FluentParserBuilder<T>
 {
     private operations: OperationsList = new OperationsList();
     public get List(): Operation[] { return this.operations.list; }
@@ -35,9 +35,9 @@ export class FluentParserBuilder
         return this;
     }
 
-    public Get(varName: string)
+    public Get(varName: keyof T)
     {
-        this.operations.Add(new GetOperation(varName));
+        this.operations.Add(new GetOperation<T>(varName));
 
         return this;
     }
@@ -78,7 +78,7 @@ export class FluentParserBuilder
         return this;
     }
 
-    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder) => FluentParserBuilder)
+    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder<T>) => FluentParserBuilder<T>)
     {
         const builder = builderCallback(new FluentParserBuilder());
         this.operations.Add(new IfOperation(toCompare, builder.List));

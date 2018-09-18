@@ -1,13 +1,24 @@
 import { FluentParserBuilder } from "../FluentParserBuilder";
+import { byte } from "../Types/byte";
+
+interface FrameData
+{
+    addr: byte;
+    val: byte;
+    val1: byte;
+    val2: byte;
+    val3: byte;
+}
 
 interface TestCase
 {
     label: string;
     inputStream: number[];
-    parserDef: (FluentParserBuilder) => FluentParserBuilder;
+    parserDef: (builder: FluentParserBuilder<FrameData>) => FluentParserBuilder<FrameData>;
     expectSuccessDef?: ((output: any) => void) | null;
     expectFaultDef?: () => void;
 }
+
 
 const testCases: TestCase[] =
     [
@@ -17,7 +28,7 @@ const testCases: TestCase[] =
             parserDef: _ => _.Is(0x01).Is(0x02)
         },
         {
-            label: 'should detect simple frame between noice',
+            label: 'should detect simple frame between noise',
             inputStream: [0xFF, 0x01, 0x02, 0xFF],
             parserDef: _ => _.Is(0x01).Is(0x02),
         },
@@ -154,7 +165,7 @@ const testCases: TestCase[] =
             parserDef: _ => _.Any().Any().IsXor()
         },
         {
-            label: 'more complicated frame with noice',
+            label: 'more complicated frame with noise',
             inputStream: [0xFF, 0xFF, 0xFF, 0x01, 0x02, 0x03, 0x14, 0x31, 0x25, 0x26, 0x27, 0x28, 0xBA, 0xFF, 0xFF, 0xFF],
             parserDef: _ => _
                 .Is(0x01).Any().Is(0x03)
@@ -199,8 +210,8 @@ testCases.forEach(test =>
 
 
 describe('FluentParser', () =>
-{
-    let parserBuilder: FluentParserBuilder;
+{   
+    let parserBuilder: FluentParserBuilder<FrameData>;
 
     beforeEach(() =>
     {
@@ -226,7 +237,7 @@ describe('FluentParser', () =>
         expect(framesCount).toBe(2);
     });
 
-    it('should detect two frames between noice', () =>
+    it('should detect two frames between noise', () =>
     {
         const inputStream = [0xFF, 0x01, 0x02, 0xFF, 0x01, 0x02, 0xFF];
 

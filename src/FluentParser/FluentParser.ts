@@ -7,7 +7,7 @@ import { GetOperation } from "./Operations/GetOperation";
 import { IfOperation } from "./Operations/IfOperation";
 import { StartBufferingOperation } from "./Operations/StartBufferingOperation";
 
-export class FluentParser
+export class FluentParser<T>
 {
     constructor(private _operations: OperationsList)
     {
@@ -17,7 +17,7 @@ export class FluentParser
     private operationsCopy: OperationsList;
     private onCompleteCallback;
     private onFaultCallback;
-    private out = {};
+    private out = <T>{};
     private bufferVarName = '';
     private buffer: ByteBuffer = new ByteBuffer();
     private frame: byte[] = [];
@@ -49,8 +49,8 @@ export class FluentParser
                 break;
 
             case OperationType.Get:
-                const varName = (op as GetOperation).varName;
-                this.out[varName] = b;
+                const varName: keyof T = (op as GetOperation<T>).varName;
+                this.out[varName.toString()] = b;
                 this.Next();
                 break;
 
@@ -134,7 +134,7 @@ export class FluentParser
         }
 
         this._operations.Reset();
-        this.out = {};
+        this.out = <T>{};
         this.frame = [];
         this._operations = this.operationsCopy;
     }
