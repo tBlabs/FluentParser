@@ -41,7 +41,7 @@ const testCases: TestCase[] =
             parserDef: _ => _.Is(0x01).Any().Is(0x03),
         },
         {
-            label: 'If',
+            label: 'simple If',
             inputStream: [0x01, 0x02],
             parserDef: _ => _.If(0x01, _ => _.Is(0x02))
         },
@@ -153,6 +153,16 @@ const testCases: TestCase[] =
             label: 'IsXor',
             inputStream: [0xAB, 0xBA, 0x11],
             parserDef: _ => _.Any().Any().IsXor()
+        },
+        {
+            label: 'more complicated frame with noice',
+            inputStream: [0xFF, 0xFF, 0xFF, 0x01, 0x02, 0x03, 0x14, 0x31, 0x25, 0x26, 0x27, 0x28, 0xBA, 0xFF, 0xFF, 0xFF],
+            parserDef: _ => _
+                .Is(0x01).Any().Is(0x03)
+                .If(0x14, _=>_.Get('addr').Get4LE('val'))
+                .If(0x15, _=>_.Is(0xFF))
+                .Is(0xBA),
+            expectSuccessDef: ({addr, val}) => { expect(addr).toBe(0x31); expect(val).toBe(0x25262728); }
         }
     ];
 
@@ -217,9 +227,9 @@ describe('FluentParser', () =>
         expect(framesCount).toBe(2);
     });
 
-    it('should detect two frames', () =>
+    it('should detect two frames between noice', () =>
     {
-        const inputStream = [0x01, 0x02, 0x01, 0x02];
+        const inputStream = [0xFF, 0x01, 0x02, 0xFF, 0x01, 0x02, 0xFF];
 
         const parser = parserBuilder
             .Is(0x01).Is(0x02)
@@ -235,39 +245,4 @@ describe('FluentParser', () =>
 
         expect(framesCount).toBe(2);
     });
-
-    it('simple If', (done) =>
-    {
-        const inputStream = [0x02, 0x03];
-
-        const parser = parserBuilder
-            .If(0x02, _ => _.Is(0x03))
-            .Build();
-
-        parser.OnComplete(() =>
-        {
-            done(); // no timeout === test pass
-        });
-
-        inputStream.forEach(b => parser.Parse(b));
-    });
-
-    it('more complicated single If', (done) =>
-    {
-        const inputStream = [0x00, 0x01, 0x02, 0xFF, 0x03, 0xAB, 0x00];
-
-        const parser = parserBuilder
-            .Is(0x00)
-            .If(0x01, _ => _.Is(0x02).Any().Is(0x03).Get('val'))
-            .Is(0x00)
-            .Build();
-
-        parser.OnComplete(({ val }) =>
-        {
-            expect(val).toBe(0xAB);
-            done(); // no timeout === test pass
-        });
-
-        inputStream.forEach(b => parser.Parse(b));
-    });
-})
+});

@@ -1,4 +1,5 @@
-export enum Endian {
+export enum Endian 
+{
     Little,
     Big
 }

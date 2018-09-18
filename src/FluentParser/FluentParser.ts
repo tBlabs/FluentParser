@@ -9,13 +9,12 @@ import { StartBufferingOperation } from "./StartBufferingOperation";
 
 export class FluentParser
 {
-    private operationsCopy: OperationsList;
     constructor(private _operations: OperationsList)
     {
         this.operationsCopy = this._operations;
-        // console.log(this._operationsList);
     }
-
+    
+    private operationsCopy: OperationsList;
     private onCompleteCallback;
     private onFaultCallback;
     private out = {};
@@ -41,8 +40,7 @@ export class FluentParser
         {
             case OperationType.IsXor:
                 if (b === this.Xor(this.frame.slice(0, this.frame.length-1))) this.Next();
-                else
-                 this.Reset();
+                else this.Reset();
                 break;
 
             case OperationType.Is:
@@ -94,6 +92,7 @@ export class FluentParser
                     }
 
                     this.Next();
+
                     if (this._operations.IsLast)
                     {
                         this.onFaultCallback(this.out);
@@ -101,12 +100,15 @@ export class FluentParser
                         break;
                     }
                 }
+
                 if (anyIfFulfilled == false)
                 {
                     this.Reset();
                 }
+
                 break;
         }
+
         if (this._operations.IsLast)
         {
             this.onCompleteCallback(this.out);
@@ -121,7 +123,6 @@ export class FluentParser
         this._operations.Next();
     }
 
-    // TODO: move to OperationsList
     private Reset(ending = false)
     {
         if (ending === false)
@@ -131,6 +132,7 @@ export class FluentParser
                 this.onFaultCallback();
             }
         }
+
         this._operations.Reset();
         this.out = {};
         this.frame = [];
@@ -141,6 +143,7 @@ export class FluentParser
     {
         this.onCompleteCallback = callback;
     }
+
     public OnFault(callback)
     {
         this.onFaultCallback = callback;
