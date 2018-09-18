@@ -1,5 +1,5 @@
-import { Endian } from "./Endian";
-import { byte } from "./byte";
+import { Endian } from "./Types/Endian";
+import { byte } from "./Types/byte";
 
 export class ByteBuffer
 {

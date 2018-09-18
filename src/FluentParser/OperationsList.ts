@@ -1,5 +1,5 @@
-import { Operation } from "./Operation";
-import { OperationType } from "./OperationType";
+import { Operation } from "./Operations/Operation";
+import { OperationType } from "./Types/OperationType";
 
 export class OperationsList
 {

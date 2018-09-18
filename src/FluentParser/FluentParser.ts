@@ -1,11 +1,11 @@
-import { byte } from "./byte";
+import { byte } from "./Types/byte";
 import { ByteBuffer } from "./ByteBuffer";
 import { OperationsList } from "./OperationsList";
-import { OperationType } from "./OperationType";
-import { IsOperation } from "./IsOperation";
-import { GetOperation } from "./GetOperation";
-import { IfOperation } from "./IfOperation";
-import { StartBufferingOperation } from "./StartBufferingOperation";
+import { OperationType } from "./Types/OperationType";
+import { IsOperation } from "./Operations/IsOperation";
+import { GetOperation } from "./Operations/GetOperation";
+import { IfOperation } from "./Operations/IfOperation";
+import { StartBufferingOperation } from "./Operations/StartBufferingOperation";
 
 export class FluentParser
 {

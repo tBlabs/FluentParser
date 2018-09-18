@@ -1,14 +1,14 @@
-import { byte } from "./byte";
-import { Endian } from "./Endian";
+import { byte } from "./Types/byte";
+import { Endian } from "./Types/Endian";
 import { OperationsList } from "./OperationsList";
-import { Operation } from "./Operation";
-import { IsOperation } from "./IsOperation";
-import { AnyOperation } from "./AnyOperation";
-import { GetOperation } from "./GetOperation";
-import { IfOperation } from "./IfOperation";
-import { StartBufferingOperation } from "./StartBufferingOperation";
-import { BufferingOperation } from "./BufferingOperation";
-import { IsXorOperation } from "./IsXorOperation";
+import { Operation } from "./Operations/Operation";
+import { IsOperation } from "./Operations/IsOperation";
+import { AnyOperation } from "./Operations/AnyOperation";
+import { GetOperation } from "./Operations/GetOperation";
+import { IfOperation } from "./Operations/IfOperation";
+import { StartBufferingOperation } from "./Operations/StartBufferingOperation";
+import { BufferingOperation } from "./Operations/BufferingOperation";
+import { IsXorOperation } from "./Operations/IsXorOperation";
 import { FluentParser } from "./FluentParser";
 
 export class FluentParserBuilder

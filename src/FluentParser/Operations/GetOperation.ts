@@ -1,7 +1,10 @@
-import { OperationType } from "./OperationType";
+import { OperationType } from "../Types/OperationType";
 import { Operation } from "./Operation";
+
 export class GetOperation implements Operation
 {
     public type = OperationType.Get;
-    constructor(public varName: string) { }
+
+    constructor(public varName: string) 
+    { }
 }

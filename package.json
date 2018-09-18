@@ -24,13 +24,10 @@
         "publish": "git push origin master"
     },
     "devDependencies": {
-        "@types/axios": "^0.14.0",
-        "@types/dotenv": "^4.0.0",
         "@types/jasmine": "^2.6.3",
         "@types/jest": "^21.1.6",
         "@types/lodash": "^4.14.92",
         "@types/node": "^7.0.18",
-        "@types/uuid": "^2.0.30",
         "jest": "^21.2.1",
         "nodemon": "^1.12.1",
         "npm-check-updates": "^2.14.0",
@@ -39,16 +36,8 @@
         "typescript": "^2.6.2"
     },
     "dependencies": {
-        "async-delay": "^1.0.3",
         "asyncawait": "^1.0.6",
         "axios": "^0.17.1",
-        "dotenv": "^4.0.0",
-        "git-rev": "^0.2.1",
-        "inversify": "^4.1.0",
-        "jasmine-core": "^2.6.1",
-        "minimist": "^1.2.0",
-        "os": "^0.1.1",
-        "reflect-metadata": "^0.1.10",
-        "uuid": "^3.1.0"
+        "jasmine-core": "^2.6.1"
     }
 }

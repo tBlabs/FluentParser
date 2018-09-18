@@ -1,5 +1,4 @@
-import { FluentParser } from "./FluentParser";
-import { FluentParserBuilder } from "./FluentParserBuilder";
+import { FluentParserBuilder } from "../FluentParserBuilder";
 
 interface TestCase
 {
