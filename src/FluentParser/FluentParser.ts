@@ -1,6 +1,6 @@
 import { byte } from "./Types/byte";
-import { ByteBuffer } from "./ByteBuffer";
-import { OperationsList } from "./OperationsList";
+import { ByteBuffer } from "./Utils/ByteBuffer";
+import { OperationsList } from "./Utils/OperationsList";
 import { OperationType } from "./Types/OperationType";
 import { IsOperation } from "./Operations/IsOperation";
 import { GetOperation } from "./Operations/GetOperation";
@@ -11,21 +11,21 @@ export class FluentParser<T>
 {
     constructor(private _operations: OperationsList)
     {
-        this.operationsCopy = this._operations;
+        this.operationsCopy = new OperationsList(this._operations);
     }
-    
+
     private operationsCopy: OperationsList;
-    private onCompleteCallback;
-    private onFaultCallback;
-    private out = <T>{};
-    private bufferVarName = '';
+    private onCompleteCallback?: (out: T, rawFrame: byte[]) => void;
+    private onFaultCallback: (reason: string, rawFrame: byte[]) => void = (reason, frame?) => console.log('FRAME PARSE FAULT', reason);
+    private out: T = {} as T;
+    private bufferVarName: string = '';
     private buffer: ByteBuffer = new ByteBuffer();
     private frame: byte[] = [];
 
     private Xor(frame: byte[]): byte
     {
         return frame.reduce((xor, next) =>
-        { 
+        {
             return xor ^ next;
         });
     }
@@ -35,17 +35,28 @@ export class FluentParser<T>
         this.frame.push(b);
 
         const op = this._operations.Current;
-
-        switch (op.type)
+        switch (op.type) // if switch by object type is possible then .type could be removed
         {
             case OperationType.IsXor:
-                if (b === this.Xor(this.frame.slice(0, this.frame.length-1))) this.Next();
-                else this.Reset();
+                const dataForXor = this.frame.slice(0, this.frame.length - 1);
+                const xor = this.Xor(dataForXor);
+                if (b === xor) 
+                {
+                    this.Next();
+                }
+                else
+                {
+                    this.Reset('checksum');
+                }
                 break;
 
             case OperationType.Is:
-                if (b === (op as IsOperation).toCompare) this.Next();
-                else this.Reset();
+                const toCompare = (op as IsOperation).toCompare;
+                if (b === toCompare)
+                {
+                    this.Next();
+                }
+                else this.Reset(b.toString() + ' is not ' + toCompare);
                 break;
 
             case OperationType.Get:
@@ -80,14 +91,17 @@ export class FluentParser<T>
                 let anyIfFulfilled = false;
                 while (this._operations.Is(OperationType.If))
                 {
-                    if (b === (this._operations.Current as IfOperation).toCompare)
+                    const toCompare = (this._operations.Current as IfOperation).toCompare;
+                    if (b === toCompare)
                     {
                         anyIfFulfilled = true;
                         const list = (this._operations.Current as IfOperation).list;
-                        const toRemove = this._operations.CountType(OperationType.If);
+                        const varName = (this._operations.Current as IfOperation).varName;
+                        this.out[varName] = b;
+                        let toRemove = this._operations.CountType(OperationType.If);
+                        if (toRemove === 0) toRemove = 1;
                         this._operations.Remove(toRemove);
-                        this._operations.Insert(list);
-                        this.Next();
+                        this._operations.InsertAfterCurrent(list);
                         break;
                     }
 
@@ -95,15 +109,19 @@ export class FluentParser<T>
 
                     if (this._operations.IsLast)
                     {
-                        this.onFaultCallback(this.out);
-                        this.Reset(true);
+                        if (anyIfFulfilled === false)
+                        {
+                            this.Reset('any if is fulfilled (at the end)');
+                        }
+                        else
+                            this.EndingReset();
                         break;
                     }
                 }
 
-                if (anyIfFulfilled == false)
+                if (anyIfFulfilled === false)
                 {
-                    this.Reset();
+                    this.Reset('any if is fulfilled');
                 }
 
                 break;
@@ -111,8 +129,10 @@ export class FluentParser<T>
 
         if (this._operations.IsLast)
         {
-            this.onCompleteCallback(this.out);
-            this.Reset(true);
+            if (this.onCompleteCallback)
+                this.onCompleteCallback(this.out, this.frame);
+
+            this.EndingReset();
         }
 
         return this;
@@ -123,28 +143,35 @@ export class FluentParser<T>
         this._operations.Next();
     }
 
-    private Reset(ending = false)
+    private CleanUp()
     {
-        if (ending === false)
-        {
-            if (this._operations.IsNonZeroIndex())
-            {
-                this.onFaultCallback();
-            }
-        }
-
         this._operations.Reset();
+        this._operations = new OperationsList(this.operationsCopy);
         this.out = <T>{};
         this.frame = [];
-        this._operations = this.operationsCopy;
     }
 
-    public OnComplete(callback)
+    private EndingReset()
+    {
+        this.CleanUp();
+    }
+
+    private Reset(reason: string)
+    {
+        if (this._operations.IsNonZeroIndex())
+        {
+            this.onFaultCallback(reason, this.frame);
+        }
+
+        this.CleanUp();
+    }
+
+    public OnComplete(callback: (out: T, rawFrame: byte[]) => void): void
     {
         this.onCompleteCallback = callback;
     }
 
-    public OnFault(callback)
+    public OnFault(callback: (reason: string, rawFrame: byte[]) => void): void
     {
         this.onFaultCallback = callback;
     }

@@ -6,6 +6,11 @@ export class IsOperation implements Operation
 {
     public type = OperationType.Is;
 
-    constructor(public toCompare: byte) 
+    constructor(public toCompare: byte)
     { }
+
+    public toString(): string
+    {
+        return "IsOperation " + this.toCompare.toString(16);
+    }
 }

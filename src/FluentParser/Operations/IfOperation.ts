@@ -8,6 +8,7 @@ export class IfOperation implements Operation
 
     constructor(
         public toCompare: byte, 
+        public varName: string,
         public list: Operation[]) 
     { }
 }

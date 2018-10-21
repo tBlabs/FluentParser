@@ -1,19 +1,36 @@
-import { Operation } from "./Operations/Operation";
-import { OperationType } from "./Types/OperationType";
+import { Operation } from "../Operations/Operation";
+import { OperationType } from "../Types/OperationType";
+import { IsOperation } from "../Operations/IsOperation";
+import { IfOperation } from "../Operations/IfOperation";
+import { GetOperation } from "../Operations/GetOperation";
+
+interface Dummy { }
 
 export class OperationsList
 {
-    public list: Operation[] = [];
+    private list: Operation[] = [];
     private currentIndex: number = 0;
 
-    constructor()
+    public get List()
     {
-        this.currentIndex = 0;
+        return this.list;
     }
 
-    toString()
+    constructor(operationsList?: OperationsList)
     {
-        return this.currentIndex+'/'+this.Size;
+        if (operationsList)
+        {
+            this.list = [];
+            operationsList.List.forEach(i => this.list.push(i));
+        }
+        this.currentIndex = 0;
+    }
+    public toString()
+    {
+        return this.currentIndex + '/' + this.Size + ' ' + this.CurrentType + ' '
+            + (this.CurrentType === OperationType.Is ? '0x' + (this.Current as IsOperation).toCompare.toString(16) : '')
+            + (this.CurrentType === OperationType.If ? '0x' + (this.Current as IfOperation).toCompare.toString(16) : '')
+            + (this.CurrentType === OperationType.Get ? (this.Current as GetOperation<Dummy>).varName : '');
     }
 
     public Add(operation: Operation)
@@ -85,11 +102,13 @@ export class OperationsList
         return count;
     }
 
-    public Insert(operations: Operation[])
+    public InsertAfterCurrent(operations: Operation[])
     {
-        operations.reverse().forEach(op =>
+        let i = this.currentIndex;
+        operations.forEach(op =>
         {
-            this.list.splice(this.currentIndex + 1, 0, op);
+            this.list.splice(i, 0, op);
+            i++;
         });
     }
 

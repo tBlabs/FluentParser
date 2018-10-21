@@ -1,6 +1,6 @@
 import { byte } from "./Types/byte";
 import { Endian } from "./Types/Endian";
-import { OperationsList } from "./OperationsList";
+import { OperationsList } from "./Utils/OperationsList";
 import { Operation } from "./Operations/Operation";
 import { IsOperation } from "./Operations/IsOperation";
 import { AnyOperation } from "./Operations/AnyOperation";
@@ -14,17 +14,17 @@ import { FluentParser } from "./FluentParser";
 export class FluentParserBuilder<T>
 {
     private operations: OperationsList = new OperationsList();
-    public get List(): Operation[] { return this.operations.list; }
+    public get List(): Operation[] { return this.operations.List; }
 
     public Build()
     {
-        return new FluentParser(this.operations);
+        return new FluentParser<T>(this.operations);
     }
 
     public Is(b)
     {
         this.operations.Add(new IsOperation(b));
-        
+
         return this;
     }
 
@@ -78,10 +78,10 @@ export class FluentParserBuilder<T>
         return this;
     }
 
-    public If(toCompare: byte, builderCallback: (builder: FluentParserBuilder<T>) => FluentParserBuilder<T>)
+    public If(toCompare: byte, varName: string, builderCallback: (builder: FluentParserBuilder<T>) => FluentParserBuilder<T>)
     {
         const builder = builderCallback(new FluentParserBuilder());
-        this.operations.Add(new IfOperation(toCompare, builder.List));
+        this.operations.Add(new IfOperation(toCompare, varName, builder.List));
 
         return this;
     }
