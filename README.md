@@ -72,7 +72,7 @@ Bytes stream parser and builder with fluent API.
 - Get2BE(varName: string) - builds 16-bit big-endian value from 2 bytes
 - Get4LE(varName: string) - builds 32-bit little-endian value from 4 bytes
 - Get4BE(varName: string) - builds 32-bit big-endian value from 4 bytes
-- If(toCompare: byte, varName: string, operationsList) - attach new stream if param is fulfilled
+- If(toCompare: byte, varName: string, operationsList: list of operations) - attach new stream if param is fulfilled
 - IsXor() - calculates xor of previous bytes and compares it with current byte
 - Build() - returns FluentParser object
 
