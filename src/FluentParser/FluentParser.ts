@@ -36,7 +36,7 @@ export class FluentParser<T>
 
         const op = this._operations.Current;
 
-        switch (op.type) // if switch by object type is possible then .type could be removed
+        switch (op.type)
         {
             case OperationType.IsXor:
                 if (b === this.Xor(this.frame.slice(0, this.frame.length-1))) this.Next();
